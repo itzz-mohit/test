@@ -1,5 +1,5 @@
 {
-  "name": "voice plus email",
+  "name": "cursor workflow - 2.0",
   "nodes": [
     {
       "parameters": {
@@ -30,10 +30,10 @@
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
       "position": [
-        -352,
-        192
+        -832,
+        432
       ],
-      "id": "852916f7-b9dc-4ab1-9c2c-c671542e5519",
+      "id": "968e2130-719c-4832-8bc3-9589c6d5d865",
       "name": "Google Sheets Trigger",
       "credentials": {
         "googleSheetsTriggerOAuth2Api": {
@@ -49,10 +49,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        48,
-        576
+        -432,
+        816
       ],
-      "id": "e66ba757-5128-4ed2-ba03-26b5706567b1",
+      "id": "b37a615c-bd99-49b3-ad95-2c3a72043dd0",
       "name": "Loop Over Items (Initial Send)"
     },
     {
@@ -67,10 +67,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        512,
-        304
+        32,
+        544
       ],
-      "id": "62394bfd-51ac-4333-bd73-cdddade01f3e",
+      "id": "0a68c513-acf2-4c02-ac10-e3de8fc4437d",
       "name": "Send Initial Email",
       "webhookId": "eab11543-cbeb-4aff-9154-71c598e5554d",
       "credentials": {
@@ -249,10 +249,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        784,
-        304
+        304,
+        544
       ],
-      "id": "a81a6362-a477-4d68-a5e0-ce2621d70753",
+      "id": "7da93a7a-0d5a-4651-be78-171e692359e4",
       "name": "Update Status",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -275,10 +275,10 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        -192,
-        832
+        -672,
+        1072
       ],
-      "id": "fd5ec4c2-802b-4a8a-baf6-c93a0383df01",
+      "id": "2d75c1b9-5e14-4ed3-991b-5048cb43fa99",
       "name": "Schedule Trigger (Follow-up Check)"
     },
     {
@@ -302,10 +302,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        80,
-        832
+        -400,
+        1072
       ],
-      "id": "ac0d7f94-f1af-4714-8985-5d4bb7157840",
+      "id": "1eacf44f-d268-4340-b820-ef30a5d3c461",
       "name": "Get All Rows",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -316,16 +316,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// ======= SET THIS TO true WHILE TESTING, false FOR REAL USE =======\nconst TESTING = true;\n\nconst SEC_BEFORE_FOLLOWUP_1 = TESTING ? 10 : 2 * 24 * 60 * 60;   // 2 days in prod\nconst SEC_BEFORE_FOLLOWUP_2 = TESTING ? 20 : 4 * 24 * 60 * 60;   // 4 days in prod\nconst SEC_BEFORE_FOLLOWUP_3 = TESTING ? 30 : 6 * 24 * 60 * 60;   // 6 days in prod\nconst SEC_BEFORE_CALL       = TESTING ? 40 : 2 * 24 * 60 * 60;   // call 2 days after Follow up 3\n\nconst fmt = 'dd MMM yyyy HH:mm:ss';\nconst parse = (str) => (str ? DateTime.fromFormat(String(str), fmt) : null);\n\nconst results = [];\nconst now = DateTime.now();\n\nfor (const [index, item] of $input.all().entries()) {\n  const d = item.json;\n\n  const status = parse(d['Status']);\n  const f1 = parse(d['Follow up 1']);\n  const f2 = parse(d['Follow up 2']);\n  const f3 = parse(d['Follow up 3']);\n  const callStatus = (d['Call Status'] || '').toString().trim();\n  const hasEmail = (d['Email'] || '').toString().trim().length > 0;\n  const attemptCount = Number(d['call_attempt_count'] || 0);\n  const retryAt = parse(d['call_retry_at']);\n\n  let due = null;\n\n  // Retry due for unanswered/declined calls (email and no-email leads).\n  if (\n    retryAt && retryAt.isValid &&\n    callStatus.toLowerCase().includes('retry scheduled') &&\n    now.toMillis() >= retryAt.toMillis() &&\n    attemptCount < 2\n  ) {\n    due = 5;\n  } else if (status && status.isValid && !d['Follow up 1'] && now.diff(status, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_1) {\n    due = 1;\n  } else if (f1 && f1.isValid && !d['Follow up 2'] && now.diff(f1, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_2) {\n    due = 2;\n  } else if (f2 && f2.isValid && !d['Follow up 3'] && now.diff(f2, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_3) {\n    due = 3;\n  } else if (f3 && f3.isValid && hasEmail && !callStatus && now.diff(f3, 'seconds').seconds >= SEC_BEFORE_CALL) {\n    due = 4; // first post-email call, only if not already called\n  }\n\n  if (due) {\n    results.push({ json: { ...d, nextFollowUp: due }, pairedItem: index });\n  }\n}\n\nreturn results;\n",
-        "mode": "runOnceForAllItems"
+        "jsCode": "// ======= SET THIS TO true WHILE TESTING, false FOR REAL USE =======\nconst TESTING = true;\n\nconst TZ = 'Asia/Kolkata';\n\nconst SEC_BEFORE_FOLLOWUP_1 = TESTING ? 10 : 2 * 24 * 60 * 60;   // 2 days in prod\nconst SEC_BEFORE_FOLLOWUP_2 = TESTING ? 20 : 4 * 24 * 60 * 60;   // 4 days in prod\nconst SEC_BEFORE_FOLLOWUP_3 = TESTING ? 30 : 6 * 24 * 60 * 60;   // 6 days in prod\nconst SEC_BEFORE_CALL       = TESTING ? 40 : 2 * 24 * 60 * 60;   // call 2 days after Follow up 3\nconst SEC_CALL_LOCK         = TESTING ? 180 : 15 * 60;           // 'Calling' older than this is stale\n\nconst MAX_CALL_ATTEMPTS = 2;   // first call + one retry\nconst MAX_CALLS_PER_RUN = 1;   // ElevenLabs allows 3 at once; we stay strictly serial\n\nconst fmt = 'dd MMM yyyy HH:mm:ss';\nconst parse = (str) => (str ? DateTime.fromFormat(String(str), fmt, { zone: TZ }) : null);\nconst now = DateTime.now().setZone(TZ);\n\nconst rows = $input.all().map((item, index) => ({ d: item.json, index }));\n\n// A call is live when some row is 'Calling' and was started recently.\n// Anything older is treated as stale so the queue can never deadlock.\nlet callLocked = false;\nfor (const { d } of rows) {\n  if ((d['Call Status'] || '').toString().trim().toLowerCase() !== 'calling') continue;\n  const startedAt = parse(d['call_started_at']);\n  const ageSec = startedAt && startedAt.isValid\n    ? now.diff(startedAt, 'seconds').seconds\n    : Number.MAX_SAFE_INTEGER;\n  if (ageSec < SEC_CALL_LOCK) {\n    callLocked = true;\n    break;\n  }\n}\n\nconst callActions = [];\nconst emailActions = [];\n\nfor (const { d, index } of rows) {\n  const status = parse(d['Status']);\n  const f1 = parse(d['Follow up 1']);\n  const f2 = parse(d['Follow up 2']);\n  const f3 = parse(d['Follow up 3']);\n  const retryAt = parse(d['call_retry_at']);\n  const startedAt = parse(d['call_started_at']);\n\n  const callStatus = (d['Call Status'] || '').toString().trim();\n  const callStatusLower = callStatus.toLowerCase();\n  const hasEmail = (d['Email'] || '').toString().trim().length > 0;\n  const hasPhone = (d['phone_number'] || '').toString().trim().length > 0;\n  const attempts = Number(d['call_attempt_count'] || 0);\n  const callingAgeSec = startedAt && startedAt.isValid\n    ? now.diff(startedAt, 'seconds').seconds\n    : Number.MAX_SAFE_INTEGER;\n\n  // Dead ends for the agent: bad number, both attempts used, or a real person has taken\n  // over because a meeting / assessment was booked.\n  const handedToHuman = callStatusLower.includes('human follow-up')\n    || callStatusLower.includes('needs review');\n  const noRetryEver = callStatusLower.includes('no retry')\n    || callStatusLower.includes('exhausted')\n    || handedToHuman;\n\n  // ---------- calls (only one is released per run) ----------\n  if (hasPhone && !noRetryEver && attempts < MAX_CALL_ATTEMPTS) {\n    // Every lead waiting for its first call sits in the queue as 'Pending Call',\n    // whether it came from a no-email row or from the end of the email sequence.\n    if (callStatusLower === 'pending call') {\n      const waitAfterFollowUps = hasEmail && f3 && f3.isValid;\n      if (!waitAfterFollowUps) {\n        callActions.push({ json: { ...d, nextFollowUp: 6, callReason: 'first call (no email lead)' }, pairedItem: index });\n      } else if (now.diff(f3, 'seconds').seconds >= SEC_BEFORE_CALL) {\n        callActions.push({ json: { ...d, nextFollowUp: 4, callReason: 'first call after follow-ups' }, pairedItem: index });\n      }\n      continue;\n    }\n    // The client asked to be called back, so the agent honours it at that time.\n    // A booked meeting or assessment never reaches this branch: a human handles those.\n    if (callStatusLower === 'callback scheduled' && retryAt && retryAt.isValid && now.toMillis() >= retryAt.toMillis()) {\n      callActions.push({ json: { ...d, nextFollowUp: 7, callReason: 'callback requested by client' }, pairedItem: index });\n      continue;\n    }\n    if (callStatusLower.includes('retry scheduled') && retryAt && retryAt.isValid && now.toMillis() >= retryAt.toMillis()) {\n      callActions.push({ json: { ...d, nextFollowUp: 5, callReason: 'retry after no answer / declined / unreachable' }, pairedItem: index });\n      continue;\n    }\n    if (callStatusLower === 'calling' && callingAgeSec >= SEC_CALL_LOCK) {\n      callActions.push({ json: { ...d, nextFollowUp: 5, callReason: 'recover stale call' }, pairedItem: index });\n      continue;\n    }\n    // Fallback for rows that finished the email sequence before 'Pending Call' existed.\n    if (!callStatus && hasEmail && f3 && f3.isValid && now.diff(f3, 'seconds').seconds >= SEC_BEFORE_CALL) {\n      callActions.push({ json: { ...d, nextFollowUp: 4, callReason: 'first call after follow-ups (legacy row)' }, pairedItem: index });\n      continue;\n    }\n  }\n\n  // ---------- follow-up emails ----------\n  if (!hasEmail) continue;\n\n  if (status && status.isValid && !d['Follow up 1'] && now.diff(status, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_1) {\n    emailActions.push({ json: { ...d, nextFollowUp: 1 }, pairedItem: index });\n  } else if (f1 && f1.isValid && !d['Follow up 2'] && now.diff(f1, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_2) {\n    emailActions.push({ json: { ...d, nextFollowUp: 2 }, pairedItem: index });\n  } else if (f2 && f2.isValid && !d['Follow up 3'] && now.diff(f2, 'seconds').seconds >= SEC_BEFORE_FOLLOWUP_3) {\n    emailActions.push({ json: { ...d, nextFollowUp: 3 }, pairedItem: index });\n  }\n}\n\nconst releasedCalls = callLocked ? [] : callActions.slice(0, MAX_CALLS_PER_RUN);\n\nreturn [...releasedCalls, ...emailActions];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        368,
-        832
+        -112,
+        1072
       ],
-      "id": "89fe0956-f645-4e46-8baf-ac3a8245f8b4",
+      "id": "a7625cda-21f1-411e-9b37-b08feeac52d2",
       "name": "Determine Due Follow-ups"
     },
     {
@@ -335,10 +334,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        608,
-        720
+        128,
+        960
       ],
-      "id": "cc77eaa4-a6a7-42a5-a267-e792356c6664",
+      "id": "ef59c803-cea3-42b5-802f-a23a21808c72",
       "name": "Loop Over Items (Follow-ups)"
     },
     {
@@ -350,10 +349,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        1072,
-        704
+        592,
+        944
       ],
-      "id": "6bc848b3-1f65-43d1-87ff-5dcf1ed51f89",
+      "id": "85066f43-8898-448c-8f05-288c7fa5a1a0",
       "name": "Route by Follow-up #"
     },
     {
@@ -371,10 +370,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1344,
-        432
+        864,
+        672
       ],
-      "id": "b447e478-66ff-481c-894b-726355c30819",
+      "id": "71e37f57-fc1c-4b3f-9b0f-128bed290675",
       "name": "Follow Up 1",
       "webhookId": "2e675390-d5db-4482-a9e0-d9ef028028bd",
       "credentials": {
@@ -399,10 +398,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1344,
-        624
+        864,
+        864
       ],
-      "id": "a5c94afe-bfa8-4fe2-8cd4-0bd018079927",
+      "id": "9d784e79-24ba-4bb7-8213-cc21ff46ea7b",
       "name": "Follow Up 2",
       "webhookId": "6931893f-9a92-409a-94d9-342f1e991062",
       "credentials": {
@@ -427,10 +426,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1344,
-        832
+        864,
+        1072
       ],
-      "id": "44501fa3-c49a-47d9-ad58-fe7e2a8c7058",
+      "id": "316a579b-8452-40d0-bdf8-8391aaf9f488",
       "name": "Follow Up 3",
       "webhookId": "f18578b0-5804-4b05-9040-f06b5ca639a8",
       "credentials": {
@@ -607,10 +606,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1632,
-        432
+        1152,
+        672
       ],
-      "id": "3dc7142b-ff5b-4310-b1b5-c3ca930737c4",
+      "id": "23f9cad7-5c39-4e97-b9fc-f383f7c0967f",
       "name": "Update Follow Up 1",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -786,10 +785,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1632,
-        624
+        1152,
+        864
       ],
-      "id": "c9bdfa2d-c3d1-401a-a360-f2a02a8decee",
+      "id": "7dc8bda3-5779-4c3f-993d-7d7196a2e9f3",
       "name": "Update Follow Up 2",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -965,10 +964,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1632,
-        832
+        1152,
+        1072
       ],
-      "id": "e88746e5-98a6-4d33-91be-1d642e544a83",
+      "id": "97993734-78c2-46d1-b975-1462b14dc73e",
       "name": "Update Follow Up 3",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -984,10 +983,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1904,
-        736
+        1424,
+        976
       ],
-      "id": "365dd60e-e233-4e29-99f3-05fa642cea64",
+      "id": "b2677108-b252-4839-9812-8e25acaceb6a",
       "name": "Wait 1 minute (Between Follow-ups)",
       "webhookId": "239dbe15-49e3-48d4-8176-710e4c3793ee"
     },
@@ -998,10 +997,10 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1072,
-        304
+        592,
+        544
       ],
-      "id": "f3b55914-5ea7-47b6-8c1e-c01eb116123d",
+      "id": "db905f65-b467-4a00-98db-6bf4624d3dbf",
       "name": "Wait 1 minute (Between Contacts)",
       "webhookId": "29f77b7a-3ad8-4e9c-9565-aba10cd4411d"
     },
@@ -1012,10 +1011,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        224,
-        304
+        -256,
+        544
       ],
-      "id": "cd7082f4-afbe-4be5-be70-780fb43f0357",
+      "id": "3ec7e209-5646-462a-9b4e-7f81c6283378",
       "name": "Get Initial Email Content"
     },
     {
@@ -1025,10 +1024,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        864,
-        720
+        384,
+        960
       ],
-      "id": "d6a459b3-61ca-4550-b5c1-ee7e7f028844",
+      "id": "f7633dc9-2ab9-4198-a209-542166ef18b3",
       "name": "Get Follow-up Content"
     },
     {
@@ -1059,10 +1058,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        0,
-        0
+        -480,
+        240
       ],
-      "id": "b1919c3f-2995-44bc-a51d-ccde18a044ec",
+      "id": "244ca6f4-b3eb-4308-bec8-76d1cc52012c",
       "name": "Already Contacted?"
     },
     {
@@ -1074,10 +1073,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        480,
-        48
+        0,
+        288
       ],
-      "id": "458f5038-2ea6-445b-b190-cb7bb7cdf750",
+      "id": "89f98c40-9d6e-4d7c-865d-2c6cabaf2852",
       "name": "Webhook",
       "webhookId": "3a4d0339-890e-4d07-8721-0f43f6cafedc"
     },
@@ -1101,15 +1100,21 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "lead_outcome": "={{ $json.body.lead_outcome }}",
-            "prospect_interest_level": "={{ $json.body.prospect_interest_level }}",
-            "business_challenge_identified": "={{ $json.body.business_challenge_identified || '' }}",
-            "next_action": "={{ $json.body.next_action || '' }}",
-            "Serial No": "={{ $json.body.lead_id }}",
-            "Call Status": "Completed",
-            "callback_datetime": "={{ $json.body.callback_datetime || '' }}",
-            "last_call_outcome": "={{ $json.body.lead_outcome || 'answered' }}",
-            "call_retry_at": ""
+            "Serial No": "={{ $json['Serial No'] }}",
+            "Call Status": "={{ $json['Call Status'] }}",
+            "lead_outcome": "={{ $json.lead_outcome }}",
+            "prospect_interest_level": "={{ $json.prospect_interest_level }}",
+            "business_challenge_identified": "={{ $json.business_challenge_identified }}",
+            "next_action": "={{ $json.next_action }}",
+            "callback_datetime": "={{ $json.callback_datetime }}",
+            "callback_count": "={{ $json.callback_count }}",
+            "meeting_datetime": "={{ $json.meeting_datetime }}",
+            "meeting_type": "={{ $json.meeting_type }}",
+            "conversation_id": "={{ $json.conversation_id }}",
+            "call_attempt_count": "={{ $json.call_attempt_count }}",
+            "call_retry_at": "={{ $json.call_retry_at }}",
+            "last_call_outcome": "={{ $json.last_call_outcome }}",
+            "call_started_at": "={{ $json.call_started_at }}"
           },
           "matchingColumns": [
             "Serial No"
@@ -1306,17 +1311,6 @@
               "removed": false
             },
             {
-              "id": "row_number",
-              "displayName": "row_number",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": true,
-              "readOnly": true,
-              "removed": true
-            },
-            {
               "id": "conversation_id",
               "displayName": "conversation_id",
               "required": false,
@@ -1355,6 +1349,57 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
+            },
+            {
+              "id": "call_started_at",
+              "displayName": "call_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "meeting_datetime",
+              "displayName": "meeting_datetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "meeting_type",
+              "displayName": "meeting_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "callback_count",
+              "displayName": "callback_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1365,10 +1410,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        928,
+        1840,
         48
       ],
-      "id": "af975cd1-f167-495a-8290-acf4e5ade389",
+      "id": "d6f042f6-c2a4-4955-b0f5-f4491a6801d5",
       "name": "Update row in sheet",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -1405,10 +1450,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -512,
-        464
+        -992,
+        704
       ],
-      "id": "ad4d6e38-5a2b-4804-88fd-20d7e30600d7",
+      "id": "0b787530-fbeb-4a4d-a8ee-7a2ab60353cc",
       "name": "If"
     },
     {
@@ -1430,56 +1475,21 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"agent_id\": \"agent_4401m000bky8ejeszdmschtkg8w3\",\n  \"agent_phone_number_id\": \"phnum_4301m0a43xymeqpbe1qzjfyt03gx\",\n  \"to_number\": \"{{ $json.phone_number }}\",\n \"conversation_initiation_client_data\": {\n    \"dynamic_variables\": {\n      \"lead_id\": \"{{ $json['Serial No'] }}\",\n      \"client_name\": \"{{ $json.Name }}\"\n    }\n  }\n}",
+        "jsonBody": "={\n  \"agent_id\": \"agent_4401m000bky8ejeszdmschtkg8w3\",\n  \"agent_phone_number_id\": \"phnum_4301m0a43xymeqpbe1qzjfyt03gx\",\n  \"to_number\": \"{{ $json.phone_number }}\",\n  \"conversation_initiation_client_data\": {\n    \"dynamic_variables\": {\n      \"lead_id\": \"{{ $json['Serial No'] }}\",\n      \"client_name\": {{ JSON.stringify($json.Name || '') }},\n      \"company\": {{ JSON.stringify($json.Company || '') }},\n      \"email_sent\": \"{{ $json.email_sent }}\",\n      \"email_subject\": {{ JSON.stringify($json.email_subject || '') }},\n      \"email_body\": {{ JSON.stringify($json.email_body || '') }},\n      \"industry_pain_points\": {{ JSON.stringify($json.industry_pain_points || '') }}\n    }\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        1008,
-        1280
+        880,
+        1424
       ],
-      "id": "39a6f7d2-568b-4780-aba1-a93785fa26ab",
-      "name": "Call Lead (Post Follow-up)",
-      "onError": "continueRegularOutput",
+      "id": "add83339-cc11-4363-a849-2598614bfa2f",
+      "name": "Call Lead",
       "retryOnFail": true,
       "maxTries": 2,
-      "waitBetweenTries": 2000
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.elevenlabs.io/v1/convai/exotel/outbound-call",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "xi-api-key",
-              "value": "sk_479288e46fd7154833dcac7f812b24d44874b80bbcc28feb"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"agent_id\": \"agent_4401m000bky8ejeszdmschtkg8w3\",\n  \"agent_phone_number_id\": \"phnum_4301m0a43xymeqpbe1qzjfyt03gx\",\n  \"to_number\": \"{{ $json.phone_number }}\",\n \"conversation_initiation_client_data\": {\n    \"dynamic_variables\": {\n      \"lead_id\": \"{{ $json['Serial No'] }}\",\n      \"client_name\": \"{{ $json.Name }}\"\n    }\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.5,
-      "position": [
-        -224,
-        560
-      ],
-      "id": "ced8ccdd-fe77-45d9-bd4e-2ab6aa3921e9",
-      "name": "Call Lead (No Email)",
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 2000
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1492,49 +1502,40 @@
           },
           "conditions": [
             {
-              "id": "043915a7-f0b4-453b-8acc-901236538bcf",
+              "id": "325500bc-34bb-4246-a515-60a51535a7b8",
               "leftValue": "={{ $json.nextFollowUp }}",
               "rightValue": 4,
               "operator": {
                 "type": "number",
-                "operation": "equals"
-              }
-            },
-            {
-              "id": "f137ad3f-a848-4060-ba70-9896c13b65a5",
-              "leftValue": "={{ $json.nextFollowUp }}",
-              "rightValue": 5,
-              "operator": {
-                "type": "number",
-                "operation": "equals"
+                "operation": "gte"
               }
             }
           ],
-          "combinator": "or"
+          "combinator": "and"
         },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        736,
-        992
+        144,
+        1392
       ],
-      "id": "f6b9759e-4307-4ef8-be9d-dd35b76197ac",
+      "id": "fc4b264b-82b4-4fb4-b222-a2a5b8f00284",
       "name": "Is Call Due?"
     },
     {
       "parameters": {
-        "jsCode": "// Combine original lead data with the outbound-call API response.\n// Persist attempt count so a later unanswered/declined webhook can schedule one retry.\nconst lead = $('If').item.json;\nconst resp = $json || {};\n\nconst conversationId = resp.conversation_id || resp.conversationId || resp.call_sid || resp.callSid || null;\nconst priorAttempts = Number(lead.call_attempt_count || 0);\nconst callAttemptCount = priorAttempts >= 1 ? priorAttempts + 1 : 1;\n\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst retrySeconds = TESTING ? 60 : 24 * 60 * 60;\nconst fmt = 'dd MMM yyyy HH:mm:ss';\n\nlet callStatus = 'Calling';\nlet lastCallOutcome = '';\nlet callRetryAt = '';\n\nif (!conversationId) {\n  lastCallOutcome = \"Didn't Pick\";\n  if (callAttemptCount < 2) {\n    callStatus = \"Didn't Pick - Retry Scheduled\";\n    callRetryAt = DateTime.now().plus({ seconds: retrySeconds }).toFormat(fmt);\n  } else {\n    callStatus = \"Didn't Pick - Retry Exhausted\";\n  }\n}\n\nreturn [{\n  json: {\n    ...lead,\n    conversation_id: conversationId || '',\n    call_attempt_count: callAttemptCount,\n    'Call Status': callStatus,\n    last_call_outcome: lastCallOutcome,\n    call_retry_at: callRetryAt\n  }\n}];\n"
+        "jsCode": "// Combine the lead row with the outbound-call response and take the queue lock,\n// so no other lead is dialled until this call resolves or goes stale.\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst TZ = 'Asia/Kolkata';\nconst SEC_BEFORE_RETRY = TESTING ? 60 : 24 * 60 * 60;\nconst MAX_CALL_ATTEMPTS = 2;\n\nconst fmt = 'dd MMM yyyy HH:mm:ss';\nconst now = DateTime.now().setZone(TZ);\n\nconst lead = $('Is Call Due?').first().json;\nconst resp = $json || {};\n\nconst conversationId = resp.conversation_id || resp.conversationId || resp.call_sid || resp.callSid || null;\nconst attempts = Number(lead.call_attempt_count || 0) + 1;\n\n// Leads are global, so no digit-count rules here. Only the telephony provider can say\n// that a number does not exist, so we simply read what it told us.\nconst respText = JSON.stringify(resp).toLowerCase();\nconst notExistHints = [\n  'does not exist',\n  \"doesn't exist\",\n  'nonexistent',\n  'non-existent',\n  'not in service',\n  'no longer in service',\n  'disconnected number',\n  'unallocated',\n  'not allocated',\n  'unassigned',\n  'number not found',\n  'no route to destination',\n  'invalid phone',\n  'invalid number',\n  'invalid to_number',\n  'invalid destination'\n];\nconst providerSaysNumberDead = notExistHints.some((hint) => respText.includes(hint));\n\nlet callStatus = 'Calling';\nlet lastOutcome = (lead.last_call_outcome || '').toString();\nlet retryAt = '';\nlet startedAt = now.toFormat(fmt);\nlet attemptCount = attempts;\n\n// No conversation id means the call never started. Release the lock straight away\n// instead of holding up the rest of the queue.\nif (!conversationId) {\n  startedAt = '';\n\n  if (providerSaysNumberDead) {\n    lastOutcome = 'Invalid Number';\n    callStatus = 'Invalid Number - No Retry';\n    attemptCount = MAX_CALL_ATTEMPTS;\n  } else if (attempts < MAX_CALL_ATTEMPTS) {\n    lastOutcome = 'Unreachable';\n    callStatus = 'Unreachable - Retry Scheduled';\n    retryAt = now.plus({ seconds: SEC_BEFORE_RETRY }).toFormat(fmt);\n  } else {\n    lastOutcome = 'Unreachable';\n    callStatus = 'Unreachable - Retry Exhausted';\n  }\n}\n\nreturn [{\n  json: {\n    ...lead,\n    conversation_id: conversationId || '',\n    call_attempt_count: attemptCount,\n    call_started_at: startedAt,\n    'Call Status': callStatus,\n    last_call_outcome: lastOutcome,\n    call_retry_at: retryAt\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        256,
-        448
+        1104,
+        1424
       ],
-      "id": "eb0beafe-6b10-4366-b330-a1040b408146",
-      "name": "Merge Call Info (No Email)"
+      "id": "cc2fe085-0df0-48a7-8aa9-d343cd10489b",
+      "name": "Merge Call Info"
     },
     {
       "parameters": {
@@ -1560,6 +1561,7 @@
             "Call Status": "={{ $json['Call Status'] }}",
             "conversation_id": "={{ $json.conversation_id }}",
             "call_attempt_count": "={{ $json.call_attempt_count }}",
+            "call_started_at": "={{ $json.call_started_at }}",
             "call_retry_at": "={{ $json.call_retry_at }}",
             "last_call_outcome": "={{ $json.last_call_outcome }}"
           },
@@ -1798,6 +1800,16 @@
               "removed": false
             },
             {
+              "id": "call_started_at",
+              "displayName": "call_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
@@ -1805,8 +1817,8 @@
               "display": true,
               "type": "number",
               "canBeUsedToMatch": true,
-              "removed": true,
-              "readOnly": true
+              "readOnly": true,
+              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -1817,11 +1829,11 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        256,
-        320
+        1536,
+        1424
       ],
-      "id": "e45d077b-fed8-4859-8226-ef04b3246112",
-      "name": "Save Call Placed (No Email)",
+      "id": "e93a2032-aaf5-4e9f-a44a-0cfcf97bff44",
+      "name": "Save Call Placed",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000,
@@ -1835,19 +1847,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combine original lead data with the outbound-call API response.\n// Used for first post-email calls and for 24h retries (nextFollowUp === 5).\nconst lead = $('Is Call Due?').item.json;\nconst resp = $json || {};\n\nconst conversationId = resp.conversation_id || resp.conversationId || resp.call_sid || resp.callSid || null;\nconst priorAttempts = Number(lead.call_attempt_count || 0);\nconst callAttemptCount = priorAttempts >= 1 ? priorAttempts + 1 : 1;\n\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst retrySeconds = TESTING ? 60 : 24 * 60 * 60;\nconst fmt = 'dd MMM yyyy HH:mm:ss';\n\nlet callStatus = 'Calling';\nlet lastCallOutcome = '';\nlet callRetryAt = '';\n\nif (!conversationId) {\n  lastCallOutcome = \"Didn't Pick\";\n  if (callAttemptCount < 2) {\n    callStatus = \"Didn't Pick - Retry Scheduled\";\n    callRetryAt = DateTime.now().plus({ seconds: retrySeconds }).toFormat(fmt);\n  } else {\n    callStatus = \"Didn't Pick - Retry Exhausted\";\n  }\n}\n\nreturn [{\n  json: {\n    ...lead,\n    conversation_id: conversationId || '',\n    call_attempt_count: callAttemptCount,\n    'Call Status': callStatus,\n    last_call_outcome: lastCallOutcome,\n    call_retry_at: callRetryAt\n  }\n}];\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1264,
-        1120
-      ],
-      "id": "db527435-361f-4e6c-9e50-b95a259f31cb",
-      "name": "Merge Call Info (Post Follow-up)"
-    },
-    {
-      "parameters": {
         "operation": "update",
         "documentId": {
           "__rl": true,
@@ -1867,11 +1866,11 @@
           "mappingMode": "defineBelow",
           "value": {
             "Serial No": "={{ $json['Serial No'] }}",
-            "Call Status": "={{ $json['Call Status'] }}",
-            "conversation_id": "={{ $json.conversation_id }}",
-            "call_attempt_count": "={{ $json.call_attempt_count }}",
-            "call_retry_at": "={{ $json.call_retry_at }}",
-            "last_call_outcome": "={{ $json.last_call_outcome }}"
+            "Call Status": "Pending Call",
+            "call_attempt_count": "0",
+            "call_started_at": "",
+            "call_retry_at": "",
+            "last_call_outcome": ""
           },
           "matchingColumns": [
             "Serial No"
@@ -2108,6 +2107,16 @@
               "removed": false
             },
             {
+              "id": "call_started_at",
+              "displayName": "call_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
@@ -2115,8 +2124,8 @@
               "display": true,
               "type": "number",
               "canBeUsedToMatch": true,
-              "removed": true,
-              "readOnly": true
+              "readOnly": true,
+              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -2127,11 +2136,11 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1504,
-        1120
+        -704,
+        800
       ],
-      "id": "6436f4a7-3218-433e-98c6-2053050b3c65",
-      "name": "Save Call Placed (Post Follow-up)",
+      "id": "24aa1543-ff3f-4193-9480-f0698993af6a",
+      "name": "Mark Pending Call",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 2000,
@@ -2152,12 +2161,12 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        480,
-        -240
+        0,
+        0
       ],
-      "id": "6448cc52-a593-4456-8c8b-c505ef58d9cd",
+      "id": "6afa8701-844c-4560-93d4-2b2749399b74",
       "name": "Webhook Call Initiation Failure",
-      "webhookId": "de93e8a9-4b3a-46c0-ad62-e3caa88fd642"
+      "webhookId": "20326558-07b9-4698-bd4e-3f7901ae858a"
     },
     {
       "parameters": {
@@ -2180,10 +2189,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        720,
-        -240
+        240,
+        0
       ],
-      "id": "c4a2cc94-2a6f-4429-9630-92184b90b6a1",
+      "id": "7a20d7f9-a173-41c5-aea1-4105f3bc0a10",
       "name": "Get Rows (Call Failure Lookup)",
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -2194,16 +2203,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// Match the ElevenLabs call_initiation_failure event to a sheet row by conversation_id.\n// no-answer -> Didn't Pick; busy / declined / rejected -> Declined.\n// First failure schedules one retry; second failure is exhausted.\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst retrySeconds = TESTING ? 60 : 24 * 60 * 60;\nconst fmt = 'dd MMM yyyy HH:mm:ss';\n\nconst webhookJson = $('Webhook Call Initiation Failure').first().json;\nconst payload = webhookJson.body || webhookJson;\nconst eventType = (payload.type || payload.event || '').toString().toLowerCase();\nif (eventType && eventType !== 'call_initiation_failure') {\n  return [];\n}\nconst data = payload.data || payload;\nconst conversationId = (\n  data.conversation_id ||\n  data.conversationId ||\n  payload.conversation_id ||\n  payload.conversationId ||\n  ''\n).toString().trim();\n\nif (!conversationId) {\n  return [];\n}\n\nconst failureReason = (\n  data.failure_reason ||\n  data.failureReason ||\n  payload.failure_reason ||\n  ''\n).toString().toLowerCase();\n\nconst metadata = data.metadata || payload.metadata || {};\nconst metaStatus = (\n  metadata.CallStatus ||\n  metadata.Status ||\n  metadata.call_status ||\n  metadata.status ||\n  ''\n).toString().toLowerCase();\nconst sipCode = (\n  metadata.SipResponseCode ||\n  metadata.sip_response_code ||\n  ''\n).toString();\n\nconst declinedHints = ['busy', 'declined', 'decline', 'rejected', 'reject', 'canceled', 'cancelled'];\nconst noAnswerHints = ['no-answer', 'no_answer', 'noanswer', 'unanswered'];\n\nlet outcome = \"Didn't Pick\";\nif (declinedHints.some((h) => failureReason.includes(h) || metaStatus.includes(h)) || sipCode === '486') {\n  outcome = 'Declined';\n} else if (noAnswerHints.some((h) => failureReason.includes(h) || metaStatus.includes(h))) {\n  outcome = \"Didn't Pick\";\n} else if (failureReason === 'unknown' || !failureReason) {\n  outcome = 'Declined';\n}\n\nconst rows = $input.all().map((item) => item.json);\nconst lead = rows.find((row) => (row.conversation_id || '').toString().trim() === conversationId);\n\nif (!lead || !(lead['Serial No'] || '').toString().trim()) {\n  return [];\n}\n\nconst attemptCount = Number(lead.call_attempt_count || 1);\nconst alreadyFinal = (lead['Call Status'] || '').toString().toLowerCase().includes('completed');\nif (alreadyFinal) {\n  return [];\n}\n\nlet callStatus;\nlet callRetryAt = '';\nif (attemptCount < 2) {\n  callStatus = `${outcome} - Retry Scheduled`;\n  callRetryAt = DateTime.now().plus({ seconds: retrySeconds }).toFormat(fmt);\n} else {\n  callStatus = `${outcome} - Retry Exhausted`;\n}\n\nreturn [{\n  json: {\n    'Serial No': lead['Serial No'],\n    'Call Status': callStatus,\n    last_call_outcome: outcome,\n    call_retry_at: callRetryAt,\n    conversation_id: conversationId,\n    call_attempt_count: attemptCount\n  }\n}];\n",
-        "mode": "runOnceForAllItems"
+        "jsCode": "// ElevenLabs sends call_initiation_failure when a call cannot be connected.\n//   number does not exist         -> Invalid Number   (never retried)\n//   no answer                     -> Didn't Pick      (retry once)\n//   busy / declined               -> Declined         (retry once)\n//   switched off / out of network  -> Unreachable      (retry once)\n//\n// \"Number does not exist\" is decided by the carrier, never by digit counting,\n// because these leads are global.\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst TZ = 'Asia/Kolkata';\nconst SEC_BEFORE_RETRY = TESTING ? 60 : 24 * 60 * 60;\nconst MAX_CALL_ATTEMPTS = 2;\n\nconst fmt = 'dd MMM yyyy HH:mm:ss';\n\nconst hook = $('Webhook Call Initiation Failure').first().json;\nconst payload = hook.body || hook;\n\nconst eventType = (payload.type || payload.event || '').toString().toLowerCase();\nif (eventType && eventType !== 'call_initiation_failure') {\n  return [];\n}\n\nconst data = payload.data || payload;\nconst conversationId = (\n  data.conversation_id ||\n  data.conversationId ||\n  payload.conversation_id ||\n  payload.conversationId ||\n  ''\n).toString().trim();\n\nif (!conversationId) {\n  return [];\n}\n\nconst reason = (data.failure_reason || data.failureReason || payload.failure_reason || '').toString().toLowerCase();\nconst meta = data.metadata || payload.metadata || {};\nconst sipCode = (meta.SipResponseCode || meta.sip_response_code || '').toString().trim();\n\n// Fold every text field the provider sent into one string, so a carrier phrase like\n// \"the number you are trying to reach does not exist\" is caught wherever it appears.\nconst signal = `${reason} ${JSON.stringify(meta)}`.toLowerCase();\nconst matches = (hints) => hints.some((hint) => signal.includes(hint));\n\n// Carrier says the destination is not a real, reachable number.\nconst notExistHints = [\n  'does not exist',\n  \"doesn't exist\",\n  'nonexistent',\n  'non-existent',\n  'not in service',\n  'no longer in service',\n  'disconnected number',\n  'unallocated',\n  'not allocated',\n  'unassigned',\n  'number not found',\n  'invalid number',\n  'invalid phone',\n  'invalid destination',\n  'wrong number',\n  'no route to destination',\n  'address incomplete'\n];\n// 404 Not Found, 410 Gone, 484 Address Incomplete, 604 Does Not Exist Anywhere\nconst notExistSip = ['404', '410', '484', '604'];\n\nconst declinedHints = ['busy', 'declined', 'decline', 'rejected', 'reject', 'canceled', 'cancelled'];\nconst declinedSip = ['486', '603'];\n\nconst noAnswerHints = ['no-answer', 'no_answer', 'noanswer', 'unanswered', 'timeout'];\n\nconst unreachableHints = ['unreachable', 'out of network', 'not reachable', 'switched off', 'unavailable', 'congestion', 'failed'];\nconst unreachableSip = ['480', '502', '503', '504'];\n\nlet outcome;\nlet retryable = true;\n\nif (matches(notExistHints) || notExistSip.includes(sipCode)) {\n  outcome = 'Invalid Number';\n  retryable = false;\n} else if (matches(declinedHints) || declinedSip.includes(sipCode)) {\n  outcome = 'Declined';\n} else if (matches(noAnswerHints) || sipCode === '408') {\n  outcome = \"Didn't Pick\";\n} else if (matches(unreachableHints) || unreachableSip.includes(sipCode)) {\n  outcome = 'Unreachable';\n} else {\n  // failure_reason 'unknown' with no useful metadata: treat as a temporary problem.\n  outcome = 'Unreachable';\n}\n\nconst lead = $input\n  .all()\n  .map((item) => item.json)\n  .find((row) => (row.conversation_id || '').toString().trim() === conversationId);\n\nif (!lead || !(lead['Serial No'] || '').toString().trim()) {\n  return [];\n}\n\nif ((lead['Call Status'] || '').toString().toLowerCase().includes('completed')) {\n  return [];\n}\n\nconst attempts = Number(lead.call_attempt_count || 1);\n\nlet callStatus;\nlet retryAt = '';\nlet attemptCount = attempts;\n\nif (!retryable) {\n  callStatus = `${outcome} - No Retry`;\n  attemptCount = MAX_CALL_ATTEMPTS;\n} else if (attempts < MAX_CALL_ATTEMPTS) {\n  callStatus = `${outcome} - Retry Scheduled`;\n  retryAt = DateTime.now().setZone(TZ).plus({ seconds: SEC_BEFORE_RETRY }).toFormat(fmt);\n} else {\n  callStatus = `${outcome} - Retry Exhausted`;\n}\n\nreturn [{\n  json: {\n    'Serial No': lead['Serial No'],\n    'Call Status': callStatus,\n    last_call_outcome: outcome,\n    call_retry_at: retryAt,\n    call_started_at: '',\n    conversation_id: conversationId,\n    call_attempt_count: attemptCount\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        -240
+        480,
+        0
       ],
-      "id": "78a3311a-51a1-4d63-b19c-fa92d04f8c63",
+      "id": "dabd8f74-7a82-458a-8a35-b3d4935f5162",
       "name": "Prepare Call Failure Update"
     },
     {
@@ -2230,6 +2238,7 @@
             "Call Status": "={{ $json['Call Status'] }}",
             "conversation_id": "={{ $json.conversation_id }}",
             "call_attempt_count": "={{ $json.call_attempt_count }}",
+            "call_started_at": "={{ $json.call_started_at }}",
             "call_retry_at": "={{ $json.call_retry_at }}",
             "last_call_outcome": "={{ $json.last_call_outcome }}"
           },
@@ -2468,6 +2477,16 @@
               "removed": false
             },
             {
+              "id": "call_started_at",
+              "displayName": "call_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
               "id": "row_number",
               "displayName": "row_number",
               "required": false,
@@ -2475,8 +2494,8 @@
               "display": true,
               "type": "number",
               "canBeUsedToMatch": true,
-              "removed": true,
-              "readOnly": true
+              "readOnly": true,
+              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -2487,10 +2506,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1200,
-        -240
+        720,
+        0
       ],
-      "id": "e81b9b31-d42b-40fc-9b43-c6d210517a66",
+      "id": "a53e1f5c-f6ab-421d-8e17-365ac4274f83",
       "name": "Update Call Failure in Sheet",
       "retryOnFail": true,
       "maxTries": 3,
@@ -2502,6 +2521,605 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc",
+          "mode": "list",
+          "cachedResultName": " leads-1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1797237499,
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc/edit#gid=1797237499"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Serial No": "={{ $('Loop Over Items (Follow-ups)').item.json['Serial No'] }}",
+            "Call Status": "Pending Call",
+            "call_attempt_count": "0",
+            "call_started_at": "",
+            "call_retry_at": "",
+            "last_call_outcome": ""
+          },
+          "matchingColumns": [
+            "Serial No"
+          ],
+          "schema": [
+            {
+              "id": "Serial No",
+              "displayName": "Serial No",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone_number",
+              "displayName": "phone_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Follow up 1",
+              "displayName": "Follow up 1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Follow up 2",
+              "displayName": "Follow up 2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Follow up 3",
+              "displayName": "Follow up 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Id ",
+              "displayName": "Id ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Thread Id",
+              "displayName": "Thread Id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Call Status",
+              "displayName": "Call Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "lead_outcome",
+              "displayName": "lead_outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "prospect_interest_level",
+              "displayName": "prospect_interest_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "business_challenge_identified",
+              "displayName": "business_challenge_identified",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "next_action",
+              "displayName": "next_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "callback_datetime",
+              "displayName": "callback_datetime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "call_attempt_count",
+              "displayName": "call_attempt_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "call_retry_at",
+              "displayName": "call_retry_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last_call_outcome",
+              "displayName": "last_call_outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "call_started_at",
+              "displayName": "call_started_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        1152
+      ],
+      "id": "b3dfef12-75f6-41e3-bb96-05952a81c1a2",
+      "name": "Mark Pending Call (After Follow-ups)",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ocfp2SgFa5EG2Cw",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc",
+          "mode": "list",
+          "cachedResultName": " leads-1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1797237499,
+          "mode": "list",
+          "cachedResultName": "Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc/edit#gid=1797237499"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        288
+      ],
+      "id": "db74b93e-8f50-42d5-a847-0445c214225e",
+      "name": "Get Rows (Call Result Lookup)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ocfp2SgFa5EG2Cw",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// The agent's post-call webhook only sends lead_id, so look the row up to find the\n// conversation we need to inspect and the counters we have to carry forward.\nconst hook = $('Webhook').first().json;\nconst body = hook.body || hook;\n\nconst leadId = (body.lead_id || body.leadId || '').toString().trim();\nif (!leadId) {\n  return [];\n}\n\nconst row = $input\n  .all()\n  .map((item) => item.json)\n  .find((r) => (r['Serial No'] || '').toString().trim() === leadId);\n\nreturn [{\n  json: {\n    lead_id: leadId,\n    body,\n    conversation_id: row ? (row.conversation_id || '').toString().trim() : '',\n    call_attempt_count: row ? Number(row.call_attempt_count || 1) : 1,\n    callback_count: row ? Number(row.callback_count || 0) : 0,\n    previous_call_status: row ? (row['Call Status'] || '').toString() : ''\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        288
+      ],
+      "id": "c90aaa97-0614-4a33-bc26-a2471b32a6c1",
+      "name": "Resolve Conversation"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.elevenlabs.io/v1/convai/conversations/{{ $json.conversation_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "sk_479288e46fd7154833dcac7f812b24d44874b80bbcc28feb"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        288
+      ],
+      "id": "3560f97f-2e39-45cc-954d-f55f8fc324d0",
+      "name": "Fetch Conversation",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decide what actually happened on an answered call, in this order:\n//\n//   1. a carrier recording answered            -> Invalid Number, never dialled again\n//   2. answered but silent and very short      -> No Response, one more try\n//   3. meeting / assessment booked            -> a REAL PERSON calls, agent never dials\n//   4. client asked to be called back          -> the agent dials again at that time\n//   5. anything else                           -> Completed\n//\n// The whole point of splitting 3 from 4: a booked meeting must never turn into a robot\n// call, and a callback request must never be left sitting for a human.\nconst TESTING = true; // keep in sync with Determine Due Follow-ups\nconst TZ = 'Asia/Kolkata';\nconst SEC_BEFORE_RETRY = TESTING ? 60 : 24 * 60 * 60;\nconst MAX_CALL_ATTEMPTS = 2;\nconst MAX_CALLBACKS = 3;      // stop endless 'call me later' loops\nconst SHORT_CALL_SEC = 20;    // a real conversation is longer than this\n\nconst fmt = 'dd MMM yyyy HH:mm:ss';\nconst now = DateTime.now().setZone(TZ);\n\nconst lead = $('Resolve Conversation').first().json;\nconst body = lead.body || {};\nconst convo = $json || {};\n\nconst attempts = Number(lead.call_attempt_count || 1);\nconst callbackCount = Number(lead.callback_count || 0);\n\n// ---------------------------------------------------------------- agent's answers\n// Field names differ depending on how the data collection is set up in ElevenLabs,\n// so accept the usual spellings rather than one hardcoded key.\nconst pick = (...keys) => {\n  for (const src of [body, body.data || {}]) {\n    for (const key of keys) {\n      let value = src[key];\n      if (value && typeof value === 'object' && 'value' in value) value = value.value;\n      if (value !== undefined && value !== null && value.toString().trim() !== '') {\n        return value.toString().trim();\n      }\n    }\n  }\n  return '';\n};\n\nlet rawMeeting = pick(\n  'meeting_datetime', 'meeting_schedule_time', 'meeting_time', 'meeting_scheduled_at',\n  'assessment_datetime', 'assessment_schedule_time', 'assessment_time',\n  'appointment_datetime', 'appointment_time', 'demo_datetime'\n);\nlet rawCallback = pick('callback_datetime', 'callback_time', 'call_back_datetime', 'callback_at');\n\nconst outcomeText = `${body.lead_outcome || ''} ${body.next_action || ''} ${pick('meeting_type') || ''}`.toLowerCase();\nconst bookingWords = ['meeting', 'assessment', 'appointment', 'demo', 'consultation', 'audit', 'booked'];\nconst saysBooked = bookingWords.some((word) => outcomeText.includes(word));\n\n// Safety net for agents that only have the callback field wired up: if the outcome says a\n// booking was made, treat that timestamp as the meeting, never as a robot callback.\nif (!rawMeeting && rawCallback && saysBooked) {\n  rawMeeting = rawCallback;\n  rawCallback = '';\n}\n\nlet meetingType = pick('meeting_type', 'appointment_type');\nif (!meetingType && rawMeeting) {\n  if (outcomeText.includes('assessment') || outcomeText.includes('audit')) meetingType = 'Assessment';\n  else if (outcomeText.includes('demo')) meetingType = 'Demo';\n  else meetingType = 'Meeting';\n}\n\n// The agent may answer in any format, so try the realistic ones. If none parse we refuse to\n// guess a dial time and ask a human to look instead.\nconst toDateTime = (raw) => {\n  if (!raw) return null;\n  const text = raw.toString().trim();\n  const attemptsList = [\n    () => DateTime.fromISO(text, { zone: TZ }),\n    () => DateTime.fromSQL(text, { zone: TZ }),\n    () => DateTime.fromRFC2822(text, { zone: TZ }),\n    () => DateTime.fromFormat(text, fmt, { zone: TZ }),\n    () => DateTime.fromFormat(text, 'dd MMM yyyy HH:mm', { zone: TZ }),\n    () => DateTime.fromFormat(text, 'dd MMM yyyy hh:mm a', { zone: TZ }),\n    () => DateTime.fromFormat(text, 'yyyy-MM-dd HH:mm', { zone: TZ }),\n    () => DateTime.fromFormat(text, 'yyyy-MM-dd hh:mm a', { zone: TZ }),\n    () => DateTime.fromFormat(text, 'dd/MM/yyyy HH:mm', { zone: TZ }),\n    () => DateTime.fromFormat(text, 'dd-MM-yyyy HH:mm', { zone: TZ })\n  ];\n  for (const attempt of attemptsList) {\n    try {\n      const parsed = attempt();\n      if (parsed && parsed.isValid) return parsed;\n    } catch (err) {\n      // try the next format\n    }\n  }\n  return null;\n};\n\n// ---------------------------------------------------------------- was it a recording?\nconst announcementHints = [\n  'does not exist',\n  \"doesn't exist\",\n  'not in service',\n  'no longer in service',\n  'out of service',\n  'has been disconnected',\n  'been disconnected',\n  'unallocated',\n  'not allocated',\n  'unassigned',\n  'not a valid number',\n  'not a working number',\n  'invalid number',\n  'wrong number',\n  'number you have dialed',\n  'number you have dialled',\n  'number you are trying to reach',\n  'number you have called',\n  'cannot be completed as dialed',\n  'cannot be completed as dialled',\n  'check the number',\n  'number does not belong'\n];\n\nconst transcript = Array.isArray(convo.transcript) ? convo.transcript : [];\n// Whatever answered the call is transcribed as the 'user' side, so a recorded\n// announcement shows up here just like a human would.\nconst otherSideText = transcript\n  .filter((turn) => (turn && turn.role ? turn.role : '').toString().toLowerCase() !== 'agent')\n  .map((turn) => (turn.message || turn.text || '').toString())\n  .join(' ')\n  .toLowerCase();\n\nconst heardAnnouncement = otherSideText.length > 0\n  && announcementHints.some((hint) => otherSideText.includes(hint));\n\nconst meta = convo.metadata || {};\nconst durationSec = Number(meta.call_duration_secs || meta.callDurationSecs || 0);\nconst convoStatus = (convo.status || '').toString().toLowerCase();\n// 'in-progress' means we fetched too early, so its transcript proves nothing.\nconst convoFinished = convoStatus !== '' && convoStatus !== 'in-progress' && convoStatus !== 'initiated';\nconst nobodySpoke = transcript.length > 0 && otherSideText.trim().length === 0;\n\n// ---------------------------------------------------------------- verdict\nlet callStatus = 'Completed';\nlet leadOutcome = (body.lead_outcome || '').toString();\nlet lastOutcome = leadOutcome || 'answered';\nlet retryAt = '';\nlet attemptCount = attempts;\nlet newCallbackCount = callbackCount;\nlet meetingStamp = '';\nlet callbackStamp = '';\nlet meetingTypeOut = '';\n\nif (heardAnnouncement) {\n  // Not a real person. Never spend the second attempt on it.\n  leadOutcome = 'invalid_number';\n  lastOutcome = 'Invalid Number';\n  callStatus = 'Invalid Number - No Retry';\n  attemptCount = MAX_CALL_ATTEMPTS;\n} else if (nobodySpoke && convoFinished && durationSec > 0 && durationSec <= SHORT_CALL_SEC) {\n  // Answered, but nothing came back: voicemail, dead air or a beep. Worth one more try.\n  leadOutcome = leadOutcome || 'no_response';\n  lastOutcome = 'No Response';\n  if (attempts < MAX_CALL_ATTEMPTS) {\n    callStatus = 'No Response - Retry Scheduled';\n    retryAt = now.plus({ seconds: SEC_BEFORE_RETRY }).toFormat(fmt);\n  } else {\n    callStatus = 'No Response - Retry Exhausted';\n  }\n} else if (rawMeeting) {\n  // Interested and booked. A real person runs this one, so no dial time is ever set.\n  const when = toDateTime(rawMeeting);\n  meetingTypeOut = meetingType;\n  meetingStamp = when ? when.toFormat(fmt) : rawMeeting; // keep the raw text if unparseable\n  leadOutcome = leadOutcome || `${meetingType.toLowerCase()}_booked`;\n  lastOutcome = `${meetingType} Booked`;\n  callStatus = when\n    ? `${meetingType} Scheduled - Human Follow-up`\n    : `${meetingType} Scheduled - Needs Review`;\n} else if (rawCallback) {\n  // Not ready to talk now. The agent calls back itself.\n  const when = toDateTime(rawCallback);\n  leadOutcome = leadOutcome || 'callback_requested';\n  lastOutcome = 'Callback Requested';\n\n  if (!when) {\n    // We will not guess a time and risk dialling at 3am.\n    callbackStamp = rawCallback;\n    callStatus = 'Callback Requested - Needs Review';\n  } else if (callbackCount + 1 > MAX_CALLBACKS) {\n    callbackStamp = when.toFormat(fmt);\n    callStatus = 'Callback Limit Reached - Human Follow-up';\n  } else {\n    // A requested callback is not a failed-call retry, so it gets a fresh attempt budget.\n    const dialAt = when.toMillis() < now.toMillis() ? now : when;\n    callbackStamp = dialAt.toFormat(fmt);\n    retryAt = dialAt.toFormat(fmt);\n    callStatus = 'Callback Scheduled';\n    newCallbackCount = callbackCount + 1;\n    attemptCount = 0;\n  }\n}\n\nconst businessFields = heardAnnouncement\n  ? { prospect_interest_level: '', business_challenge_identified: '', next_action: '' }\n  : {\n      prospect_interest_level: body.prospect_interest_level || '',\n      business_challenge_identified: body.business_challenge_identified || '',\n      next_action: body.next_action || ''\n    };\n\nreturn [{\n  json: {\n    'Serial No': lead.lead_id,\n    'Call Status': callStatus,\n    conversation_id: lead.conversation_id,\n    call_attempt_count: attemptCount,\n    call_started_at: '',\n    call_retry_at: retryAt,\n    last_call_outcome: lastOutcome,\n    lead_outcome: leadOutcome,\n    callback_datetime: callbackStamp,\n    callback_count: newCallbackCount,\n    meeting_datetime: meetingStamp,\n    meeting_type: meetingTypeOut,\n    ...businessFields\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        288
+      ],
+      "id": "cc18a0f0-1e41-4b51-8015-a72fb17c8e46",
+      "name": "Classify Call Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2b3875b2-3f72-4a8e-8bd0-6da6fea9abbd",
+              "leftValue": "={{ ($json['Id '] || '').toString().trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        336,
+        1472
+      ],
+      "id": "c10a0e1f-2ff2-4e17-9e6e-e18cbd5550aa",
+      "name": "Was Email Sent?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json['Id '] }}",
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        1248
+      ],
+      "id": "1978846d-5b48-4a59-b55a-3cc6706d2922",
+      "name": "Fetch Initial Email",
+      "webhookId": "25e1f25c-1f65-4977-aec6-ff9c1062e9ad",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XPRT1aB84QWKaeYt",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tell the voice agent which email it is calling about.\n//\n// For a lead that was emailed, 'Fetch Initial Email' hands us the real message from Gmail,\n// so the agent sees exactly what the client received. For a lead with no email address there\n// is nothing to fetch, so it gets the category brief below and email_sent = 'no' instead,\n// which stops it from claiming to have sent an email that never existed.\nconst MAX_EMAIL_CHARS = 3000; // keep the agent's prompt from being swamped\n\n// Used when the Category does not match anything below, e.g. a typo in the sheet. The email\n// branch throws on an unknown category, but a no-email lead would otherwise reach the agent\n// with no context at all.\nconst GENERIC_BRIEF = [\n  'Industry: not recorded for this lead, so ask what the business does before pitching.',\n  'Opening question you can ask: how much of your team\\'s week goes into manual admin and paperwork instead of the work that actually makes money?',\n  'Busy work that quietly eats most teams: chasing documents, re-keying data between systems, rebuilding the same reports.',\n  'The offer: a free assessment of their operations, then we build the fix for their biggest problem free. If it works, we talk pricing.'\n].join('\\n');\n\n// Generated from the templates in 'Get Initial Email Content'. Used only when there is no\n// real email to show, so regenerate it if you reword those templates.\nconst PAIN_POINTS = {\n  \"Manuf-Electrical-Electronic\": \"Industry: electrical and electronic manufacturing.\\nOpening question you can ask: how much revenue is your factory losing because your workforce spends more time on QC documentation and compliance paperwork than on production?\\nBusy work that quietly eats their team: supplier certificate chasing, rework and scrap logging, month end production reporting.\\nThey would rather have those people on: the line, the order book and the customer.\\nCompetitors who already fixed this are: shipping more orders with the headcount they already have.\",\n  \"Manuf-Machinery\": \"Industry: industrial machinery and equipment manufacturing.\\nOpening question you can ask: how many engineering hours go into producing quotes, BOMs and service documentation instead of building and shipping machines?\\nBusy work that quietly eats their team: spec clarification emails, hunting old drawings, spare parts lookups.\\nThey would rather have those people on: designing, building and shipping machines.\\nCompetitors who already fixed this are: returning quotes in hours while the rest of the market still takes days.\",\n  \"Manuf-Semiconductor\": \"Industry: semiconductor and photonics.\\nOpening question you can ask: how much engineering time disappears into test data wrangling, yield reporting and customer qualification paperwork instead of device work?\\nBusy work that quietly eats their team: manual data pulls, rebuilding the same charts, reformatting customer reports.\\nThey would rather have those people on: yield, reliability and the next process node.\\nCompetitors who already fixed this are: answering a customer qualification question in hours instead of weeks.\",\n  \"Manuf-Industrial Automation\": \"Industry: industrial automation and robotics.\\nOpening question you can ask: how much of your team's time goes into project documentation, commissioning reports and support tickets instead of deploying systems?\\nBusy work that quietly eats their team: as built documentation, repeat support answers, scope clarification threads.\\nThey would rather have those people on: deployments and new installations.\\nCompetitors who already fixed this are: commissioning more systems per engineer than you can.\",\n  \"Manuf-Consumer Electronics\": \"Industry: consumer electronics.\\nOpening question you can ask: how much margin goes into handling returns, warranty claims and support tickets rather than into product?\\nBusy work that quietly eats their team: warranty triage, marketplace message handling, review monitoring.\\nThey would rather have those people on: product, channel growth and margin.\\nCompetitors who already fixed this are: scaling sales without scaling support headcount.\",\n  \"HC-Medical devices\": \"Industry: medical device.\\nOpening question you can ask: how many hours a week does your team lose to regulatory documentation, complaint handling and post market surveillance instead of product work?\\nBusy work that quietly eats their team: document version control, audit preparation, supplier quality correspondence.\\nThey would rather have those people on: product development and market access.\\nCompetitors who already fixed this are: moving through submission and audit faster with the same quality team.\",\n  \"HC-Hospital & care\": \"Industry: hospital and care.\\nOpening question you can ask: how much clinical and administrative time goes into intake, prior authorisation, scheduling and documentation rather than into patient care?\\nBusy work that quietly eats their team: chasing missing information, referral follow ups, roster and cover admin.\\nThey would rather have those people on: patients and clinical care.\\nCompetitors who already fixed this are: seeing more patients with the staff they already have.\",\n  \"HC-Health and wellness\": \"Industry: health and wellness.\\nOpening question you can ask: how much of your team's week goes into onboarding, scheduling and content admin rather than into serving clients?\\nBusy work that quietly eats their team: rescheduling, reminder chasing, answering the same questions.\\nThey would rather have those people on: clients, retention and programme quality.\\nCompetitors who already fixed this are: growing their client base without growing their admin team.\",\n  \"HC-Biotechnology\": \"Industry: biotechnology and life sciences.\\nOpening question you can ask: how much scientist time goes into experiment documentation, data cleanup and reporting instead of into actual science?\\nBusy work that quietly eats their team: reformatting instrument exports, rebuilding figures, chasing collaborators for data.\\nThey would rather have those people on: experiments and the pipeline.\\nCompetitors who already fixed this are: getting from data to decision in days rather than weeks.\",\n  \"HC-Pharmacutical\": \"Industry: pharmaceutical.\\nOpening question you can ask: how much time does your team spend assembling regulatory documentation, batch records and safety reports instead of moving product forward?\\nBusy work that quietly eats their team: document formatting, cross referencing dossiers, drafting query responses.\\nThey would rather have those people on: programmes, submissions and market access.\\nCompetitors who already fixed this are: filing sooner with the team they already have.\",\n  \"HC-Mental care\": \"Industry: mental health and behavioural care.\\nOpening question you can ask: how much clinician time goes into notes, intake and insurance paperwork instead of into sessions?\\nBusy work that quietly eats their team: insurance verification calls, no show follow ups, referral coordination.\\nThey would rather have those people on: client sessions and the waitlist.\\nCompetitors who already fixed this are: seeing more clients per clinician without longer days.\",\n  \"HC-Medical practice\": \"Industry: medical and dental practice.\\nOpening question you can ask: how much front desk and clinician time goes into scheduling, recalls, insurance and notes instead of into patients?\\nBusy work that quietly eats their team: eligibility checks, recall lists, chasing patient forms.\\nThey would rather have those people on: chair time and patients.\\nCompetitors who already fixed this are: filling their schedule while yours still has gaps.\",\n  \"Retail\": \"Industry: retail.\\nOpening question you can ask: how much margin goes into manual product data, order issues and customer service instead of into selling?\\nBusy work that quietly eats their team: fixing channel data, answering stock questions, setting up promotions.\\nThey would rather have those people on: range, merchandising and demand.\\nCompetitors who already fixed this are: launching and repricing faster than you can.\",\n  \"RET-Apparal & fashion\": \"Industry: apparel and fashion.\\nOpening question you can ask: how much time does your team spend on product copy, sizing queries and marketplace listings instead of on design and sales?\\nBusy work that quietly eats their team: sample and lookbook admin, size chart questions, channel messaging.\\nThey would rather have those people on: design, marketing and sell through.\\nCompetitors who already fixed this are: getting a drop live across every channel in a day.\",\n  \"RET-Consumer goods\": \"Industry: consumer goods.\\nOpening question you can ask: how much time goes into retailer paperwork, product data and customer queries rather than into product and distribution?\\nBusy work that quietly eats their team: retailer portal updates, deduction disputes, spec and sample requests.\\nThey would rather have those people on: accounts, distribution and margin.\\nCompetitors who already fixed this are: onboarding retail accounts in days rather than weeks.\",\n  \"LOG-Logistics & supply chain\": \"Industry: logistics and supply chain.\\nOpening question you can ask: how many hours a day does your team spend chasing status updates, quoting rates and reconciling paperwork instead of moving freight?\\nBusy work that quietly eats their team: where is my order emails, chasing proof of delivery, rate sheet updates.\\nThey would rather have those people on: capacity, margin and customer growth.\\nCompetitors who already fixed this are: answering customers instantly while yours wait for someone to look it up.\",\n  \"LOG-Transport\": \"Industry: transport.\\nOpening question you can ask: how much dispatch and back office time goes into scheduling, driver paperwork and customer calls instead of into moving people and vehicles?\\nBusy work that quietly eats their team: job confirmations, chasing driver documents, customer callbacks.\\nThey would rather have those people on: utilisation, routes and new contracts.\\nCompetitors who already fixed this are: running more jobs per dispatcher than you can.\",\n  \"LOG-Packaging frieght\": \"Industry: freight and shipping services.\\nOpening question you can ask: how much of your team's day goes into quoting, customs paperwork and documentation instead of into actually shipping?\\nBusy work that quietly eats their team: rate lookups, document corrections, status callbacks.\\nThey would rather have those people on: bookings and volume.\\nCompetitors who already fixed this are: quoting the same hour a request lands.\",\n  \"LOG-Warehouse\": \"Industry: warehousing and storage.\\nOpening question you can ask: how much time goes into inventory reconciliation, customer enquiries and billing admin rather than into throughput?\\nBusy work that quietly eats their team: cycle count investigations, client report building, billing queries.\\nThey would rather have those people on: throughput and client capacity.\\nCompetitors who already fixed this are: taking on new clients without adding admin staff.\",\n  \"FIN-Insurance\": \"Industry: insurance.\\nOpening question you can ask: how much of your team's capacity goes into submission intake, document review and claims admin rather than into underwriting and client work?\\nBusy work that quietly eats their team: rekeying submissions, chasing missing information, status update emails.\\nThey would rather have those people on: underwriting, broking and client relationships.\\nCompetitors who already fixed this are: quoting first and winning the business they see first.\",\n  \"FIN-Banking\": \"Industry: banking and credit union.\\nOpening question you can ask: how much staff time goes into onboarding, document review and member service rather than into lending and relationships?\\nBusy work that quietly eats their team: document collection, exception follow ups, repeat member queries.\\nThey would rather have those people on: lending, deposits and relationships.\\nCompetitors who already fixed this are: approving files faster with the same staff.\",\n  \"CRE-construction\": \"Industry: construction and contracting.\\nOpening question you can ask: how much time does your team spend on RFIs, submittals, compliance paperwork and progress reporting instead of on building?\\nBusy work that quietly eats their team: chasing subcontractor documents, rebuilding progress reports, filing site records.\\nThey would rather have those people on: programme, productivity and margin.\\nCompetitors who already fixed this are: closing out RFIs and variations before you have even found the file.\",\n  \"CRE-Real estate\": \"Industry: real estate.\\nOpening question you can ask: how much of your team's week goes into listing admin, buyer and tenant enquiries and document handling rather than into deals?\\nBusy work that quietly eats their team: enquiry triage, appointment coordination, listing document preparation.\\nThey would rather have those people on: listings, viewings and deals.\\nCompetitors who already fixed this are: answering every enquiry in minutes while yours wait hours.\",\n  \"CRE-Building materials\": \"Industry: building materials.\\nOpening question you can ask: how much time goes into quoting, takeoffs, product data and order queries instead of into selling and delivering?\\nBusy work that quietly eats their team: spec and stock lookups, takeoff checking, price list updates.\\nThey would rather have those people on: quotes, orders and deliveries.\\nCompetitors who already fixed this are: getting a priced quote back before the competition has opened the drawing.\",\n  \"CRE-Architecture\": \"Industry: architecture and design.\\nOpening question you can ask: how much studio time goes into specifications, compliance checks and reporting instead of into design?\\nBusy work that quietly eats their team: consultant coordination, drawing issue tracking, fee and scope correspondence.\\nThey would rather have those people on: design, pursuits and delivery.\\nCompetitors who already fixed this are: turning around pursuits without pulling designers off live projects.\",\n  \"CRE-commercial RE\": \"Industry: commercial real estate.\\nOpening question you can ask: how much time goes into lease abstraction, tenant requests and reporting rather than into assets and tenants?\\nBusy work that quietly eats their team: lease clause lookups, routing tenant requests, rebuilding rent roll reports.\\nThey would rather have those people on: assets, tenants and net operating income.\\nCompetitors who already fixed this are: answering an owner question in minutes instead of a day.\",\n  \"HOSP-Hospitality\": \"Industry: hotel and hospitality.\\nOpening question you can ask: how much of your team's day goes into guest messages, booking admin and reporting instead of into guest experience?\\nBusy work that quietly eats their team: channel message handling, group and event enquiries, shift report building.\\nThey would rather have those people on: guest experience, occupancy and rate.\\nCompetitors who already fixed this are: answering every guest and every enquiry instantly, at any hour.\",\n  \"HOSP-Travel & Lesiure\": \"Industry: travel and leisure.\\nOpening question you can ask: how much of your team's capacity goes into itinerary building, quotes and traveller queries rather than into selling trips?\\nBusy work that quietly eats their team: supplier availability checks, itinerary reformatting, change and refund handling.\\nThey would rather have those people on: bookings, upsells and repeat travellers.\\nCompetitors who already fixed this are: sending a tailored itinerary the same day an enquiry lands.\",\n  \"AUTO-Automotive\": \"Industry: automotive.\\nOpening question you can ask: how much revenue is lost to slow enquiry response, service scheduling and warranty paperwork instead of going into sales and service?\\nBusy work that quietly eats their team: enquiry follow ups, service reminders, chasing warranty documents.\\nThey would rather have those people on: sales, service bays and parts.\\nCompetitors who already fixed this are: responding first and taking the sale before you have opened the email.\",\n  \"ENE-Renewables\": \"Industry: renewable energy and clean technology.\\nOpening question you can ask: how much of your team's time goes into permitting, incentive paperwork, proposals and performance reporting instead of into building projects?\\nBusy work that quietly eats their team: collecting documents for permits, rebuilding proposals, monthly performance reporting.\\nThey would rather have those people on: projects, pipeline and generation.\\nCompetitors who already fixed this are: getting projects through approval and into build faster.\",\n  \"ENE-Oil & Energy\": \"Industry: energy and industrial services.\\nOpening question you can ask: how much engineering and back office time goes into compliance reporting, tender documentation and field paperwork instead of into operations?\\nBusy work that quietly eats their team: transcribing field reports, gathering compliance evidence, assembling bid documents.\\nThey would rather have those people on: operations, uptime and new contracts.\\nCompetitors who already fixed this are: bidding on more work without more nights.\",\n  \"ENE-Utilities\": \"Industry: utility.\\nOpening question you can ask: how much of your team's capacity goes into customer enquiries, billing exceptions and regulatory reporting rather than into service delivery?\\nBusy work that quietly eats their team: repeat customer queries, billing exception investigation, report assembly.\\nThey would rather have those people on: network, service and customers.\\nCompetitors who already fixed this are: absorbing volume spikes without a queue forming.\"\n};\n\nconst lead = $('Is Call Due?').first().json;\n\nconst normalizeKey = (s) => (s || '').toString().trim().toLowerCase().replace(/\\s+/g, '');\nconst NORMALIZED_PAIN = {};\nfor (const [key, value] of Object.entries(PAIN_POINTS)) {\n  NORMALIZED_PAIN[normalizeKey(key)] = value;\n}\n\n// Empty for no-email leads, and for anything Gmail could not return.\nconst fetched = $json && !$json.error ? $json : {};\n\nconst decode = (s) => s\n  .replace(/&nbsp;/gi, ' ')\n  .replace(/&amp;/gi, '&')\n  .replace(/&lt;/gi, '<')\n  .replace(/&gt;/gi, '>')\n  .replace(/&quot;/gi, '\"')\n  .replace(/&#39;|&apos;/gi, \"'\");\n\n// The agent must never read markup or a raw URL out loud, so links keep only their label.\nconst htmlToText = (html) => decode(\n  html\n    .replace(/<a\\b[^>]*>(.*?)<\\/a>/gis, '$1')\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/(p|div|li|tr|h[1-6])>/gi, '\\n')\n    .replace(/<li\\b[^>]*>/gi, '- ')\n    .replace(/<[^>]+>/g, '')\n)\n  .replace(/\\r/g, '')\n  .replace(/[ \\t]+/g, ' ')\n  .split('\\n')\n  .map((line) => line.trim())\n  .join('\\n')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\nconst looksLikeHtml = (s) => /<[a-z][\\s\\S]*>/i.test(s);\nconst toPlain = (s) => (looksLikeHtml(s) ? htmlToText(s) : decode(s).trim());\n\nlet emailBody = '';\nfor (const candidate of [fetched.text, fetched.html, fetched.textAsHtml, fetched.snippet]) {\n  const value = (candidate || '').toString();\n  if (value.trim()) {\n    emailBody = toPlain(value);\n    if (emailBody) break;\n  }\n}\n\nif (emailBody.length > MAX_EMAIL_CHARS) {\n  emailBody = emailBody.slice(0, MAX_EMAIL_CHARS).trim() + '...';\n}\n\nconst emailSubject = (fetched.subject || '').toString().trim();\n\n// The stored message id is the proof an initial email actually went out.\nconst wasEmailed = (lead['Id '] || '').toString().trim() !== ''\n  || (lead['Thread Id'] || '').toString().trim() !== '';\n\n// Only used when there is no email text to give the agent.\nconst painPoints = emailBody\n  ? ''\n  : (NORMALIZED_PAIN[normalizeKey(lead['Category'])] || GENERIC_BRIEF);\n\nreturn [{\n  json: {\n    ...lead,\n    email_sent: wasEmailed ? 'yes' : 'no',\n    email_subject: emailSubject,\n    email_body: emailBody,\n    industry_pain_points: painPoints\n  },\n  pairedItem: { item: 0 }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        1424
+      ],
+      "id": "b81bd45e-5302-405c-bd97-875d58c13600",
+      "name": "Build Call Context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const TZ = 'Asia/Kolkata';\nconst fmt = 'dd MMM yyyy HH:mm:ss';\nconst now = DateTime.now().setZone(TZ);\n\nconst classified = $json;\nconst convo = $('Fetch Conversation').first().json || {};\nconst lead = $('Resolve Conversation').first().json || {};\n\nconst transcript = Array.isArray(convo.transcript) ? convo.transcript : [];\n\nlet formatted;\nif (transcript.length === 0) {\n  formatted = '(no transcript available)';\n} else {\n  formatted = transcript.map((turn) => {\n    const role = (turn.role || '').toString().toLowerCase() === 'agent' ? 'Agent' : 'Client';\n    const text = (turn.message || turn.text || '').toString().trim();\n    return `${role}: ${text}`;\n  }).join('\\n');\n}\n\nconst meta = convo.metadata || {};\nconst duration = Number(\n  meta.call_duration_secs || meta.callDurationSecs || meta.duration || 0\n);\n\nreturn [{\n  json: {\n    ...classified,\n    _transcript_serial: classified['Serial No'] || lead.lead_id || '',\n    _transcript_name: lead.body ? (lead.body.client_name || lead.body.Name || '') : '',\n    _transcript_conversation_id: classified.conversation_id || lead.conversation_id || '',\n    _transcript_attempt: classified.call_attempt_count || lead.call_attempt_count || 1,\n    _transcript_status: classified['Call Status'] || '',\n    _transcript_timestamp: now.toFormat(fmt),\n    _transcript_duration: duration,\n    _transcript_text: formatted\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        48
+      ],
+      "id": "d94d1af7-4cac-449e-9914-8299f6777ac3",
+      "name": "Format Transcript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc",
+          "mode": "list",
+          "cachedResultName": " leads-1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YR79SfBeeCiFL86Y38PxrcEUvEOZ5KxvacKhjknbEQc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Transcripts",
+          "mode": "list",
+          "cachedResultName": "Transcripts"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Serial No": "={{ $json._transcript_serial }}",
+            "Name": "={{ $json._transcript_name }}",
+            "conversation_id": "={{ $json._transcript_conversation_id }}",
+            "call_attempt": "={{ $json._transcript_attempt }}",
+            "call_status": "={{ $json._transcript_status }}",
+            "timestamp": "={{ $json._transcript_timestamp }}",
+            "duration_seconds": "={{ $json._transcript_duration }}",
+            "transcript": "={{ $json._transcript_text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Serial No",
+              "displayName": "Serial No",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_id",
+              "displayName": "conversation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "call_attempt",
+              "displayName": "call_attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "call_status",
+              "displayName": "call_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duration_seconds",
+              "displayName": "duration_seconds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcript",
+              "displayName": "transcript",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1648,
+        48
+      ],
+      "id": "a9158773-a749-459f-97da-672f20321245",
+      "name": "Save Transcript",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ocfp2SgFa5EG2Cw",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "pinData": {},
@@ -2680,7 +3298,7 @@
       "main": [
         [
           {
-            "node": "Wait 1 minute (Between Follow-ups)",
+            "node": "Mark Pending Call (After Follow-ups)",
             "type": "main",
             "index": 0
           }
@@ -2753,7 +3371,7 @@
       "main": [
         [
           {
-            "node": "Update row in sheet",
+            "node": "Get Rows (Call Result Lookup)",
             "type": "main",
             "index": 0
           }
@@ -2764,7 +3382,7 @@
       "main": [
         [
           {
-            "node": "Call Lead (No Email)",
+            "node": "Mark Pending Call",
             "type": "main",
             "index": 0
           }
@@ -2778,22 +3396,11 @@
         ]
       ]
     },
-    "Call Lead (No Email)": {
-      "main": [
-        [
-          {
-            "node": "Merge Call Info (No Email)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Is Call Due?": {
       "main": [
         [
           {
-            "node": "Call Lead (Post Follow-up)",
+            "node": "Was Email Sent?",
             "type": "main",
             "index": 0
           }
@@ -2807,55 +3414,44 @@
         ]
       ]
     },
-    "Call Lead (Post Follow-up)": {
+    "Call Lead": {
       "main": [
         [
           {
-            "node": "Merge Call Info (Post Follow-up)",
+            "node": "Merge Call Info",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge Call Info (No Email)": {
+    "Merge Call Info": {
       "main": [
         [
           {
-            "node": "Save Call Placed (No Email)",
+            "node": "Save Call Placed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge Call Info (Post Follow-up)": {
-      "main": [
-        [
-          {
-            "node": "Save Call Placed (Post Follow-up)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Call Placed (No Email)": {
-      "main": [
-        [
-          {
-            "node": "Wait 1 minute (Between Contacts)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Call Placed (Post Follow-up)": {
+    "Save Call Placed": {
       "main": [
         [
           {
             "node": "Wait 1 minute (Between Follow-ups)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Pending Call": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (Initial Send)",
             "type": "main",
             "index": 0
           }
@@ -2894,22 +3490,135 @@
           }
         ]
       ]
+    },
+    "Mark Pending Call (After Follow-ups)": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 minute (Between Follow-ups)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows (Call Result Lookup)": {
+      "main": [
+        [
+          {
+            "node": "Resolve Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Conversation": {
+      "main": [
+        [
+          {
+            "node": "Fetch Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Conversation": {
+      "main": [
+        [
+          {
+            "node": "Classify Call Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Call Result": {
+      "main": [
+        [
+          {
+            "node": "Format Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was Email Sent?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Initial Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Call Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Initial Email": {
+      "main": [
+        [
+          {
+            "node": "Build Call Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Call Context": {
+      "main": [
+        [
+          {
+            "node": "Call Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Transcript": {
+      "main": [
+        [
+          {
+            "node": "Save Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Transcript": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false,
-    "timeSavedMode": "fixed",
-    "timezone": "Asia/Kolkata",
-    "callerPolicy": "workflowsFromSameOwner"
+    "binaryMode": "separate"
   },
-  "versionId": "19258472-0741-4853-8afc-06f82f78cbe7",
+  "versionId": "c67f689d-45c3-45a1-97fe-151a32c43797",
   "meta": {
     "instanceId": "57c88a53051b5a80ac47ef4ee7268fca181023e1603ac0a7dfea369a51054ebd"
   },
   "nodeGroups": [],
-  "id": "ev7mlwtLCrO6mzRY",
+  "id": "RFED31IgbAJFGexT",
   "tags": []
 }
